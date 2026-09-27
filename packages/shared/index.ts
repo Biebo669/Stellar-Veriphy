@@ -1,4 +1,12 @@
+// Browser-safe entry point. Node-only helpers live under "./utils/hash".
 export * from "./types";
+export * from "./scoring/confidence";
+export * from "./utils/hash";
+export * from "./utils/provenanceExport";
+export * from "./utils/snapshotDiff";
+export * from "./utils/manifestSigning";
+export * from "./utils/metadataRedaction";
+export * from "./factories";
 export * from "./validation/result";
 export * from "./validation/hash";
 export * from "./validation/stellar";

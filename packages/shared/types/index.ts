@@ -782,3 +782,117 @@ export interface CertificateValidation {
     timestampValid: boolean;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Oracle Analytics Dashboard (Feature: analytics/operations/oracle)
+// ---------------------------------------------------------------------------
+
+/** A single time-series data point for oracle throughput */
+export interface OracleThroughputPoint {
+  /** Unix timestamp (seconds) for the start of this bucket */
+  timestamp: number;
+  /** ISO 8601 label for display (e.g. "2026-09-27T12:00") */
+  label: string;
+  /** Total verification requests processed in this bucket */
+  total: number;
+  /** Successful verifications */
+  successful: number;
+  /** Failed verifications */
+  failed: number;
+}
+
+/** Oracle health status enum */
+export type OracleHealthStatus = "healthy" | "degraded" | "critical" | "unknown";
+
+/** Attestation health snapshot for a single oracle provider */
+export interface OracleAttestationHealth {
+  providerId: string;
+  status: OracleHealthStatus;
+  /** Success rate 0–100 */
+  successRate: number;
+  /** Average response time in seconds */
+  avgResponseTimeSeconds: number;
+  /** Uptime percentage 0–100 */
+  uptimePercent: number;
+  lastCheckedAt: number;
+  /** Whether the provider is currently suspended */
+  suspended: boolean;
+  /** Whether a TEE hash near-expiry warning is active */
+  teeHashNearExpiry: boolean;
+}
+
+/** Quality metrics across all oracle providers */
+export interface OracleQualityMetrics {
+  /** Total verifications across all providers */
+  totalVerifications: number;
+  /** Overall success rate (%) */
+  overallSuccessRate: number;
+  /** Average latency in seconds */
+  avgLatencySeconds: number;
+  /** Number of active providers */
+  activeProviderCount: number;
+  /** Number of suspended providers */
+  suspendedProviderCount: number;
+  /** Providers with critical health status */
+  criticalProviderCount: number;
+  /** Timestamp when metrics were last computed */
+  computedAt: number;
+}
+
+/** Anomaly detected in oracle operations */
+export interface OracleAnomaly {
+  id: string;
+  providerId?: string;
+  type:
+    | "high_failure_rate"
+    | "latency_spike"
+    | "tee_expiry"
+    | "provider_suspended"
+    | "low_throughput";
+  severity: "warning" | "critical";
+  description: string;
+  detectedAt: number;
+  resolved: boolean;
+}
+
+/** Full oracle analytics dashboard data */
+export interface OracleDashboardData {
+  quality: OracleQualityMetrics;
+  providerHealth: OracleAttestationHealth[];
+  throughput: OracleThroughputPoint[];
+  anomalies: OracleAnomaly[];
+  /** ISO 8601 timestamp of this snapshot */
+  snapshotAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Provenance Snapshot Diff (Feature: audit/feature/data)
+// ---------------------------------------------------------------------------
+
+export interface ProvenanceSnapshot {
+  id: string;
+  certificateId: string;
+  manifestHash: string;
+  attestationHash: string;
+  storageRef: string;
+  creator: string;
+  actor: string;
+  timestamp: number;
+  verificationLevel?: string;
+  revoked?: boolean;
+  expiresAt?: number | null;
+  metadata?: Record<string, string | undefined>;
+  tags?: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Manifest Signing (Feature: security/blockchain/data)
+// ---------------------------------------------------------------------------
+
+export interface ManifestSignatureStatus {
+  signed: boolean;
+  verified: boolean;
+  signerPublicKey?: string;
+  signedAt?: string;
+  reason?: string;
+}

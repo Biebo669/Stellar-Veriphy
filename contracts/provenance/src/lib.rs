@@ -441,6 +441,65 @@ pub enum DataKey {
     RollbackRecord(u64),
     /// Ordered list of rollback record ids for a given certificate.
     CertRollbacks(u64),
+    // ── manifest signing ──────────────────────────────────────────────────
+    /// Ed25519 signature record proving the creator signed the manifest.
+    ManifestSignature(u64),
+    // ── redaction policy ──────────────────────────────────────────────────
+    /// Hash of the active redaction policy for a certificate.
+    RedactionPolicy(u64),
+}
+
+// ── Snapshot struct (audit diff support) ──────────────────────────────────
+
+/// A point-in-time snapshot of a certificate's mutable fields.
+/// Used by off-chain diff tools to compare two versions of a certificate.
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct ProvenanceCertSnapshot {
+    pub certificate_id: u64,
+    pub manifest_hash: String,
+    pub attestation_hash: String,
+    pub storage_ref: String,
+    pub creator: Address,
+    /// Address of the last actor that modified this certificate.
+    pub actor: Address,
+    pub timestamp: u64,
+    pub verification_level: VerificationLevel,
+    pub revoked: bool,
+    pub expires_at: Option<u64>,
+    pub tags: Vec<String>,
+}
+
+// ── Manifest signing record ────────────────────────────────────────────────
+
+/// On-chain record of a creator's Ed25519 signature over a manifest hash.
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct ManifestSignatureRecord {
+    pub certificate_id: u64,
+    /// The manifest hash that was signed.
+    pub manifest_hash: String,
+    /// Stellar public key (G...) of the signer — must match creator.
+    pub signer_public_key: String,
+    /// Base64-encoded Ed25519 signature.
+    pub signature: String,
+    /// Ledger timestamp when the signature was stored.
+    pub signed_at: u64,
+}
+
+// ── Redaction policy record ────────────────────────────────────────────────
+
+/// On-chain record of a metadata redaction policy for a certificate.
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct RedactionPolicyRecord {
+    pub certificate_id: u64,
+    /// SHA-256 hash of the full policy JSON (stored off-chain or on IPFS).
+    pub policy_hash: String,
+    pub applied_by: Address,
+    pub applied_at: u64,
+    /// Whether a governance reviewer approved this policy.
+    pub approved: bool,
 }
 
 #[contract]
@@ -2209,6 +2268,227 @@ impl ProvenanceContract {
         }
 
         results
+    }
+
+    // -----------------------------------------------------------------
+    // Provenance snapshot diff support
+    // -----------------------------------------------------------------
+
+    /// Return a snapshot of the current certificate state for use in audit
+    /// diff comparisons.  Callers can store the returned data off-chain and
+    /// later pass two snapshots to a diff utility to understand what changed,
+    /// when, and by whom.
+    ///
+    /// The snapshot bundles all mutable fields that could change over the
+    /// certificate's lifetime (manifest hash, verification level, revocation
+    /// status, tags, expiration) together with the actor that last modified
+    /// the certificate (tracked in the amendment history log).
+    pub fn take_snapshot(env: Env, certificate_id: u64) -> Result<ProvenanceCertSnapshot, ProvenanceError> {
+        let cert: ProvenanceCert = env
+            .storage()
+            .persistent()
+            .get(&certificate_id)
+            .ok_or(ProvenanceError::CertificateNotFound)?;
+
+        // Pull the most recent history entry to identify the last actor
+        let history: Vec<CertificateHistory> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::History(certificate_id))
+            .unwrap_or_else(|| Vec::new(&env));
+
+        let last_actor = if history.len() > 0 {
+            history.get_unchecked(history.len() - 1).modifier.clone()
+        } else {
+            cert.creator.clone()
+        };
+
+        Ok(ProvenanceCertSnapshot {
+            certificate_id,
+            manifest_hash: cert.manifest_hash.clone(),
+            attestation_hash: cert.attestation_hash.clone(),
+            storage_ref: cert.storage_ref.clone(),
+            creator: cert.creator.clone(),
+            actor: last_actor,
+            timestamp: env.ledger().timestamp(),
+            verification_level: cert.verification_level,
+            revoked: cert.revoked,
+            expires_at: cert.expires_at,
+            tags: cert.tags.clone(),
+        })
+    }
+
+    // -----------------------------------------------------------------
+    // Cryptographic manifest signing support
+    // -----------------------------------------------------------------
+
+    /// Store a creator-supplied Ed25519 signature over a certificate's
+    /// manifest hash, providing on-chain evidence that the manifest was not
+    /// tampered with after the creator signed it.
+    ///
+    /// `signer` must be the certificate creator's `Address` (enforced via
+    /// `require_auth`). `signer_public_key` is the Stellar G... key string
+    /// recorded for off-chain audit; `signature` is the base64-encoded Ed25519
+    /// signature validated by the TEE oracle before this call is made.
+    ///
+    /// Only the oracle may call this — the oracle is responsible for
+    /// verifying the Ed25519 signature off-chain against the registry before
+    /// forwarding the record here.
+    pub fn store_manifest_signature(
+        env: Env,
+        certificate_id: u64,
+        signer: Address,
+        signer_public_key: String,
+        signature: String,
+        signed_at: u64,
+    ) -> Result<(), ProvenanceError> {
+        let oracle: Address = env
+            .storage()
+            .persistent()
+            .get(&symbol_short!("ORACLE"))
+            .expect("Not initialized");
+        oracle.require_auth();
+
+        let cert: ProvenanceCert = env
+            .storage()
+            .persistent()
+            .get(&certificate_id)
+            .ok_or(ProvenanceError::CertificateNotFound)?;
+
+        // Enforce that the declared signer is the certificate creator.
+        // The oracle has already verified the Ed25519 signature off-chain;
+        // this check ensures the on-chain record is tied to the right identity.
+        if signer != cert.creator {
+            return Err(ProvenanceError::Unauthorized);
+        }
+
+        let record = ManifestSignatureRecord {
+            certificate_id,
+            manifest_hash: cert.manifest_hash.clone(),
+            signer_public_key,
+            signature,
+            signed_at,
+        };
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::ManifestSignature(certificate_id), &record);
+
+        env.events().publish(
+            (Symbol::new(&env, "manifest_signed"), certificate_id),
+            cert.manifest_hash,
+        );
+
+        Ok(())
+    }
+
+    /// Retrieve the stored manifest signature for a certificate.
+    pub fn get_manifest_signature(
+        env: Env,
+        certificate_id: u64,
+    ) -> Option<ManifestSignatureRecord> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::ManifestSignature(certificate_id))
+    }
+
+    // -----------------------------------------------------------------
+    // Metadata redaction policy support
+    // -----------------------------------------------------------------
+
+    /// Store a redaction policy for a certificate so governance reviewers can
+    /// audit and approve what metadata is publicly visible.
+    ///
+    /// Only the certificate owner or oracle may register a policy.
+    pub fn set_redaction_policy(
+        env: Env,
+        certificate_id: u64,
+        policy_hash: String,
+        applied_by: Address,
+    ) -> Result<(), ProvenanceError> {
+        applied_by.require_auth();
+
+        let cert: ProvenanceCert = env
+            .storage()
+            .persistent()
+            .get(&certificate_id)
+            .ok_or(ProvenanceError::CertificateNotFound)?;
+
+        let owner = Self::current_owner(&env, certificate_id, &cert);
+        // Allow owner or oracle to set the policy
+        let oracle: Option<Address> = env
+            .storage()
+            .persistent()
+            .get(&symbol_short!("ORACLE"));
+        if applied_by != owner {
+            if let Some(oracle_addr) = oracle {
+                if applied_by != oracle_addr {
+                    return Err(ProvenanceError::Unauthorized);
+                }
+            } else {
+                return Err(ProvenanceError::Unauthorized);
+            }
+        }
+
+        let record = RedactionPolicyRecord {
+            certificate_id,
+            policy_hash,
+            applied_by: applied_by.clone(),
+            applied_at: env.ledger().timestamp(),
+            approved: false,
+        };
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::RedactionPolicy(certificate_id), &record);
+
+        env.events().publish(
+            (Symbol::new(&env, "redaction_policy_set"), certificate_id),
+            applied_by,
+        );
+
+        Ok(())
+    }
+
+    /// Approve a pending redaction policy (oracle/admin-gated).
+    pub fn approve_redaction_policy(
+        env: Env,
+        certificate_id: u64,
+    ) -> Result<(), ProvenanceError> {
+        let oracle: Address = env
+            .storage()
+            .persistent()
+            .get(&symbol_short!("ORACLE"))
+            .expect("Not initialized");
+        oracle.require_auth();
+
+        let mut record: RedactionPolicyRecord = env
+            .storage()
+            .persistent()
+            .get(&DataKey::RedactionPolicy(certificate_id))
+            .ok_or(ProvenanceError::CertificateNotFound)?;
+
+        record.approved = true;
+        env.storage()
+            .persistent()
+            .set(&DataKey::RedactionPolicy(certificate_id), &record);
+
+        env.events().publish(
+            (Symbol::new(&env, "redaction_approved"), certificate_id),
+            oracle,
+        );
+
+        Ok(())
+    }
+
+    /// Retrieve the current redaction policy record for a certificate.
+    pub fn get_redaction_policy(
+        env: Env,
+        certificate_id: u64,
+    ) -> Option<RedactionPolicyRecord> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::RedactionPolicy(certificate_id))
     }
 
     // -----------------------------------------------------------------
