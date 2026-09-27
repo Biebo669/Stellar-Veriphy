@@ -3171,3 +3171,8 @@ mod tests {
         assert_eq!(err, Error::GroupNotFound);
     }
 }
+
+// #654 — integration tests covering multi-step workflows, storage mutations,
+// event emission, and error paths across the registry contract.
+#[cfg(test)]
+mod integration_tests;

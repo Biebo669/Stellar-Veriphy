@@ -2136,3 +2136,8 @@ impl OracleContract {
 }
 
 mod test;
+
+// #654 — integration tests covering multi-step workflows, storage mutations,
+// event emission, and error paths across the oracle contract.
+#[cfg(test)]
+mod integration_tests;
