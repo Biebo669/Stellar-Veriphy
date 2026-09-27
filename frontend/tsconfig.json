@@ -1,69 +1,24 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "jsx": "preserve",
-    "incremental": true,
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "isolatedModules": true,
-    "skipLibCheck": true,
     "resolveJsonModule": true,
+    "isolatedModules": true,
     "moduleResolution": "Bundler",
-    "moduleResolution": "Bundler",
-    "baseUrl": ".",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "strict": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
-    "allowJs": true
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
-    "types": ["jest"],
+    "plugins": [{ "name": "next" }],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
       "@stellarveriphy/shared/*": ["../packages/shared/*"]
-    },
-    "allowJs": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true
+    }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "next-env.d.ts",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
-  "include": ["**/*.ts", "**/*.tsx", "next-env.d.ts", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

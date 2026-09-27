@@ -2,6 +2,8 @@ export { CertificateGallery } from "./CertificateGallery";
 export type { HistoryEvent } from "./CertificateHistoryTimeline";
 export { CertificateHistoryTimeline, generateMockHistory } from "./CertificateHistoryTimeline";
 export { CertificateLookupForm } from "./CertificateLookupForm";
+export { CertificateQRCode, CertificateShareQR } from "./CertificateQRCode";
+export { CertificateRegenerationPanel } from "./CertificateRegenerationPanel";
 export { CertificateResultCard } from "./CertificateResultCard";
 export type { CertificateStatus } from "./CertificateStatusBadge";
 export { CertificateStatusBadge } from "./CertificateStatusBadge";
