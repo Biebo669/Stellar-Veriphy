@@ -19,13 +19,17 @@
     "./validation/upload": "./validation/upload.ts",
     "./validation/result": "./validation/result.ts",
     "./factories": "./factories/index.ts",
+    "./schemas": "./schemas/index.ts",
+    "./scoring/providerTrust": "./scoring/providerTrust.ts",
+    "./utils/disputeEvidence": "./utils/disputeEvidence.ts",
+    "./utils/apiTokens": "./utils/apiTokens.ts",
+    "./utils/provenanceReplay": "./utils/provenanceReplay.ts"
     "./tracing": "./tracing/index.ts",
     "./recovery": "./recovery/index.ts",
     "./ai-labeling": "./ai-labeling/index.ts",
     "./policy": "./policy/index.ts",
     "./schemas": "./schemas/index.ts"
   },
-  "types": "index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

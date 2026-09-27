@@ -122,6 +122,12 @@ export default function OraclesPage() {
             >
               Analytics dashboard →
             </a>
+            <a
+              href="/oracles/trust"
+              className="rounded border border-emerald-700 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50 transition-colors"
+            >
+              Trust scores →
+            </a>
             <button
               type="button"
               onClick={() => setRefreshKey((value) => value + 1)}

@@ -176,6 +176,13 @@ function ItemDetailPanel({
           </div>
         )}
 
+        <a
+          href={`/admin/moderation/${item.id}/evidence`}
+          className="inline-flex items-center text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+        >
+          Open full evidence package →
+        </a>
+
         {/* Escalation chain */}
         {item.escalationChain && item.escalationChain.length > 0 && (
           <div>
