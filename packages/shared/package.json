@@ -1,13 +1,14 @@
 {
   "name": "@stellarveriphy/shared",
   "version": "0.1.0",
-  "main": "index.ts"
   "main": "index.ts",
   "exports": {
     ".": "./index.ts",
     "./types": "./types/index.ts",
     "./scoring": "./scoring/confidence.ts",
+    "./schemas": "./schemas/index.ts",
     "./utils/hash": "./utils/hash.ts"
+  },
   "types": "index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
