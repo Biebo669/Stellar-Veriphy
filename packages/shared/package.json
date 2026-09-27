@@ -18,10 +18,12 @@
     "./validation/stellar": "./validation/stellar.ts",
     "./validation/upload": "./validation/upload.ts",
     "./validation/result": "./validation/result.ts",
-    "./factories": "./factories/index.ts"
-  },
-    "./schemas": "./schemas/index.ts",
-    "./utils/hash": "./utils/hash.ts"
+    "./factories": "./factories/index.ts",
+    "./tracing": "./tracing/index.ts",
+    "./recovery": "./recovery/index.ts",
+    "./ai-labeling": "./ai-labeling/index.ts",
+    "./policy": "./policy/index.ts",
+    "./schemas": "./schemas/index.ts"
   },
   "types": "index.ts",
   "scripts": {
