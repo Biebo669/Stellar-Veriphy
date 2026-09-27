@@ -537,6 +537,126 @@ export interface VersionDifference {
 }
 
 // ---------------------------------------------------------------------------
+// Asset versioning — rollback metadata (#658)
+// ---------------------------------------------------------------------------
+
+/** Reason an asset was rolled back to a previous version. */
+export type RollbackReason =
+  | "data_corruption"
+  | "incorrect_attestation"
+  | "creator_request"
+  | "legal_requirement"
+  | "operational_error"
+  | "other";
+
+/**
+ * Immutable record created each time an asset is rolled back to a prior
+ * version. Preserved for auditability so the full version history remains
+ * legible even after subsequent changes.
+ */
+export interface RollbackMetadata {
+  /** Unique rollback event identifier. */
+  id: string;
+  /** The content hash of the asset this rollback belongs to. */
+  contentHash: string;
+  /** Version that was active at the time the rollback was initiated. */
+  fromVersionId: string;
+  fromVersionNumber: number;
+  /** Version that became active after the rollback completed. */
+  toVersionId: string;
+  toVersionNumber: number;
+  /** The Stellar address of the account that initiated the rollback. */
+  initiatedBy: string;
+  /** ISO 8601 timestamp of when the rollback was initiated. */
+  initiatedAt: string;
+  /** Human-readable explanation for why the rollback was performed. */
+  reason: RollbackReason;
+  /** Optional free-text notes recorded by the initiator. */
+  notes?: string;
+  /** On-chain transaction hash of the rollback record, if anchored. */
+  txHash?: string;
+  /**
+   * Manifest hash of the target version, copied here for quick integrity
+   * verification without re-fetching the full version record.
+   */
+  targetManifestHash: string;
+}
+
+/**
+ * Full rollback history for a content asset, grouped for easy rendering.
+ */
+export interface RollbackHistory {
+  contentHash: string;
+  rollbacks: RollbackMetadata[];
+  totalRollbacks: number;
+}
+
+// ---------------------------------------------------------------------------
+// Admin moderation queue (#655)
+// ---------------------------------------------------------------------------
+
+/** Why an asset was placed in the moderation queue. */
+export type ModerationTrigger =
+  | "disputed_provenance"
+  | "suspicious_attestation"
+  | "creator_dispute"
+  | "legal_flag"
+  | "automated_anomaly"
+  | "manual_escalation";
+
+/** Lifecycle status of a moderation item. */
+export type ModerationStatus =
+  | "pending"
+  | "under_review"
+  | "approved"
+  | "rejected"
+  | "escalated"
+  | "resolved";
+
+/** A single item in the admin moderation queue. */
+export interface ModerationQueueItem {
+  /** Unique moderation item identifier. */
+  id: string;
+  /** Certificate or asset identifier being reviewed. */
+  assetId: string;
+  /** Content hash of the disputed asset. */
+  contentHash: string;
+  /** Current lifecycle status of the moderation item. */
+  status: ModerationStatus;
+  /** What caused this asset to enter the queue. */
+  trigger: ModerationTrigger;
+  /** Stellar address of the party raising the dispute (if applicable). */
+  reportedBy?: string;
+  /** Stellar address of the asset's creator. */
+  creatorAddress?: string;
+  /** Human-readable summary of the dispute or concern. */
+  summary: string;
+  /** Supporting evidence: links, hashes, notes. */
+  evidence?: string[];
+  /** ISO 8601 timestamp when the item entered the queue. */
+  createdAt: string;
+  /** ISO 8601 timestamp of the most recent status change. */
+  updatedAt: string;
+  /** Stellar address of the reviewer who is handling or handled this item. */
+  assignedTo?: string;
+  /** Admin notes recorded during review. */
+  reviewNotes?: string;
+  /** ISO 8601 timestamp of final resolution, if any. */
+  resolvedAt?: string;
+  /** Escalation chain — ordered list of addresses who have handled the item. */
+  escalationChain?: string[];
+}
+
+/** Summary counters for the moderation queue dashboard. */
+export interface ModerationQueueSummary {
+  total: number;
+  pending: number;
+  underReview: number;
+  escalated: number;
+  resolvedToday: number;
+}
+
+// ---------------------------------------------------------------------------
 // Analytics Dashboard (Issue #470)
 // ---------------------------------------------------------------------------
 

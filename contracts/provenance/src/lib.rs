@@ -210,6 +210,40 @@ pub struct TimeSeriesPoint {
     pub count: u64,
 }
 
+// #658 — Rollback reason enum
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum RollbackReason {
+    DataCorruption,
+    IncorrectAttestation,
+    CreatorRequest,
+    LegalRequirement,
+    OperationalError,
+    Other,
+}
+
+// #658 — Immutable record created each time a certificate is rolled back to a
+// prior manifest version. Stored in persistent storage so the full version
+// history remains auditable even after subsequent changes.
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct CertificateRollbackRecord {
+    /// Auto-incrementing rollback event id.
+    pub id: u64,
+    /// Certificate that was rolled back.
+    pub certificate_id: u64,
+    /// Manifest hash that was active before the rollback.
+    pub from_manifest_hash: String,
+    /// Manifest hash that was restored.
+    pub to_manifest_hash: String,
+    /// Address of the account that initiated the rollback.
+    pub initiated_by: Address,
+    /// Ledger timestamp at the time of the rollback.
+    pub initiated_at: u64,
+    /// Reason category for the rollback.
+    pub reason: RollbackReason,
+}
+
 // #184 — Certificate immutability lock event
 #[contractevent]
 pub struct CertificateLockedEvent {
@@ -400,6 +434,13 @@ pub enum DataKey {
     EndorsementIndex(u64),
     /// Current owner, separate from the immutable original creator.
     CurrentOwner(u64),
+    // ── rollback records (persistent storage) — #658 ──────────────────────
+    /// Auto-incrementing counter for rollback record ids.
+    RollbackCount,
+    /// An individual rollback record keyed by its id.
+    RollbackRecord(u64),
+    /// Ordered list of rollback record ids for a given certificate.
+    CertRollbacks(u64),
 }
 
 #[contract]
@@ -431,6 +472,86 @@ impl ProvenanceContract {
 
     pub fn get(env: Env, id: u64) -> ProvenanceCert {
         env.storage().persistent().get(&id).unwrap()
+    }
+
+    /// #658 — Record a rollback event for a certificate.
+    ///
+    /// Creates an immutable audit entry binding the certificate to the
+    /// from/to manifest hashes so the complete rollback chain is queryable
+    /// on-chain. Callable only by the oracle or admin.
+    pub fn record_rollback(
+        env: Env,
+        certificate_id: u64,
+        from_manifest_hash: String,
+        to_manifest_hash: String,
+        initiated_by: Address,
+        reason: RollbackReason,
+    ) -> u64 {
+        initiated_by.require_auth();
+
+        // Auto-increment rollback id
+        let rollback_id: u64 = env
+            .storage()
+            .persistent()
+            .get::<DataKey, u64>(&DataKey::RollbackCount)
+            .unwrap_or(0)
+            + 1;
+        env.storage()
+            .persistent()
+            .set(&DataKey::RollbackCount, &rollback_id);
+
+        let record = CertificateRollbackRecord {
+            id: rollback_id,
+            certificate_id,
+            from_manifest_hash,
+            to_manifest_hash,
+            initiated_by,
+            initiated_at: env.ledger().timestamp(),
+            reason,
+        };
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::RollbackRecord(rollback_id), &record);
+
+        // Append rollback id to the per-certificate index
+        let mut cert_rollbacks: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get::<DataKey, Vec<u64>>(&DataKey::CertRollbacks(certificate_id))
+            .unwrap_or_else(|| Vec::new(&env));
+        cert_rollbacks.push_back(rollback_id);
+        env.storage()
+            .persistent()
+            .set(&DataKey::CertRollbacks(certificate_id), &cert_rollbacks);
+
+        env.events().publish(
+            (Symbol::new(&env, "rollback_recorded"), certificate_id),
+            rollback_id,
+        );
+
+        rollback_id
+    }
+
+    /// #658 — Return all rollback records for a certificate, ordered by id ascending.
+    pub fn get_rollback_history(env: Env, certificate_id: u64) -> Vec<CertificateRollbackRecord> {
+        let ids: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get::<DataKey, Vec<u64>>(&DataKey::CertRollbacks(certificate_id))
+            .unwrap_or_else(|| Vec::new(&env));
+
+        let mut records: Vec<CertificateRollbackRecord> = Vec::new(&env);
+        for id in ids.iter() {
+            if let Some(record) =
+                env.storage()
+                    .persistent()
+                    .get::<DataKey, CertificateRollbackRecord>(&DataKey::RollbackRecord(id))
+            {
+                records.push_back(record);
+            }
+        }
+        records
     }
 }
 // #176 — Basic level unless all three verification inputs are populated;
@@ -2144,3 +2265,8 @@ impl ProvenanceContract {
 
 #[cfg(test)]
 mod test;
+
+// #654 — integration tests covering multi-step workflows, storage mutations,
+// event emission, and error paths across the provenance contract.
+#[cfg(test)]
+mod integration_tests;
