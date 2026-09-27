@@ -1,14 +1,25 @@
 {
   "name": "@stellarveriphy/shared",
   "version": "0.1.0",
-  "main": "index.ts"
   "main": "index.ts",
+  "types": "index.ts",
   "exports": {
     ".": "./index.ts",
     "./types": "./types/index.ts",
     "./scoring": "./scoring/confidence.ts",
-    "./utils/hash": "./utils/hash.ts"
-  "types": "index.ts",
+    "./utils/hash": "./utils/hash.ts",
+    "./utils/snapshotDiff": "./utils/snapshotDiff.ts",
+    "./utils/manifestSigning": "./utils/manifestSigning.ts",
+    "./utils/metadataRedaction": "./utils/metadataRedaction.ts",
+    "./utils/provenanceExport": "./utils/provenanceExport.ts",
+    "./utils/digest": "./utils/digest.ts",
+    "./validation/manifest": "./validation/manifest.ts",
+    "./validation/hash": "./validation/hash.ts",
+    "./validation/stellar": "./validation/stellar.ts",
+    "./validation/upload": "./validation/upload.ts",
+    "./validation/result": "./validation/result.ts",
+    "./factories": "./factories/index.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

@@ -97,6 +97,15 @@ const tools: ToolCard[] = [
     badge: "#466 / #467",
     badgeColor: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
   },
+  {
+    title: "Metadata Redaction",
+    description:
+      "Controlled redaction for sensitive manifest fields. Hide location, device, or file details from public view while keeping the on-chain proof fully intact.",
+    href: "/tools/manifest-redaction",
+    icon: "🕶️",
+    badge: "Privacy",
+    badgeColor: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+  },
 ];
 
 export default function ToolsPage() {
