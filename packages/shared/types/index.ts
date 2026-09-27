@@ -472,7 +472,14 @@ export interface WorkflowStep {
 /** Audit log entry tracking user actions. */
 export interface AuditLogEntry {
   id: string;
-  entityType: "team" | "document" | "workflow" | "verification";
+  entityType:
+    | "team"
+    | "document"
+    | "workflow"
+    | "verification"
+    | "dispute_evidence"
+    | "api_token"
+    | "provenance_recovery";
   entityId: string;
   action: string;
   actor: string;

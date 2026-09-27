@@ -15,6 +15,8 @@
     "clean": "bash scripts/clean.sh",
     "reset-db": "bash scripts/reset-db.sh",
     "generate-mock-data": "node scripts/generate-mock-data.mjs",
+    "provenance:recover": "node scripts/provenance-recovery.mjs",
+    "api-token": "node scripts/api-token.mjs",
     "deploy:check": "bash scripts/deploy-helper.sh staging check-only",
     "deploy:staging": "bash scripts/deploy-helper.sh staging",
     "deploy:production": "bash scripts/deploy-helper.sh production",

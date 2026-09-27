@@ -18,12 +18,13 @@
     "./validation/stellar": "./validation/stellar.ts",
     "./validation/upload": "./validation/upload.ts",
     "./validation/result": "./validation/result.ts",
-    "./factories": "./factories/index.ts"
-  },
+    "./factories": "./factories/index.ts",
     "./schemas": "./schemas/index.ts",
-    "./utils/hash": "./utils/hash.ts"
+    "./scoring/providerTrust": "./scoring/providerTrust.ts",
+    "./utils/disputeEvidence": "./utils/disputeEvidence.ts",
+    "./utils/apiTokens": "./utils/apiTokens.ts",
+    "./utils/provenanceReplay": "./utils/provenanceReplay.ts"
   },
-  "types": "index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
