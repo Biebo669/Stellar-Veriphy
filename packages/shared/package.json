@@ -20,6 +20,10 @@
     "./validation/result": "./validation/result.ts",
     "./factories": "./factories/index.ts"
   },
+    "./schemas": "./schemas/index.ts",
+    "./utils/hash": "./utils/hash.ts"
+  },
+  "types": "index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

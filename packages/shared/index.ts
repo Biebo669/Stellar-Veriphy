@@ -13,3 +13,7 @@ export * from "./validation/stellar";
 export * from "./validation/manifest";
 export * from "./validation/upload";
 export * from "./utils/digest";
+export * from "./utils/provenanceExport";
+export * from "./scoring/confidence";
+export * from "./schemas";
+export * from "./factories";
