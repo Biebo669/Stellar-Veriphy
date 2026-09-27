@@ -111,6 +111,12 @@ export default function OraclesPage() {
           </div>
           <div className="flex items-center gap-3">
             <a
+              href="/registry/trust"
+              className="rounded border border-emerald-700 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50 transition-colors"
+            >
+              Trust dashboard →
+            </a>
+            <a
               href="/oracles/analytics"
               className="rounded border border-emerald-700 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50 transition-colors"
             >
