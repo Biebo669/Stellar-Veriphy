@@ -80,6 +80,15 @@ const tools: ToolCard[] = [
     badgeColor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
   },
   {
+    title: "Compliance Audit Trail",
+    description:
+      "Structured, tamper-evident record of legal and compliance actions tied to provenance events — GDPR/CCPA requests, retention milestones, content disputes, and policy changes.",
+    href: "/tools/compliance-audit",
+    icon: "⚖️",
+    badge: "#688",
+    badgeColor: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
+  },
+  {
     title: "Verification History",
     description:
       "A local, browser-only timeline of certificates you've looked up or verified, with date filtering, export, and a privacy control to disable or clear tracking.",
