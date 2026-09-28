@@ -23,12 +23,11 @@
     "./scoring/providerTrust": "./scoring/providerTrust.ts",
     "./utils/disputeEvidence": "./utils/disputeEvidence.ts",
     "./utils/apiTokens": "./utils/apiTokens.ts",
-    "./utils/provenanceReplay": "./utils/provenanceReplay.ts"
+    "./utils/provenanceReplay": "./utils/provenanceReplay.ts",
     "./tracing": "./tracing/index.ts",
     "./recovery": "./recovery/index.ts",
     "./ai-labeling": "./ai-labeling/index.ts",
-    "./policy": "./policy/index.ts",
-    "./schemas": "./schemas/index.ts"
+    "./policy": "./policy/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
