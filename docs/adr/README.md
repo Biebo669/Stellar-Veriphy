@@ -39,3 +39,7 @@ Small, easily-reversible implementation details (variable naming, a single funct
 | [0012](0012-attestation-oracle-failover.md)      | Resilient failover for attestation and oracle       | Accepted |
 | [0013](0013-oracle-anomaly-detection.md)         | Anomaly detection for suspicious oracle activity    | Accepted |
 | [0014](0014-dynamic-provenance-access-policy.md) | Dynamic policy engine for provenance access         | Accepted |
+| [0015](0015-key-rotation-revocation-framework.md) | Cryptographic key rotation and revocation framework | Accepted |
+| [0016](0016-multi-tenant-registry-governance.md)  | Multi-tenant registry governance model              | Accepted |
+| [0017](0017-tee-remote-attestation-pipeline.md)   | Hardened TEE remote attestation pipeline            | Accepted |
+| [0018](0018-verifier-reputation-network.md)       | Decentralised verifier reputation network           | Accepted |
