@@ -1,10 +1,3 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  transpilePackages: ["@stellarveriphy/shared"],
-};
-
-export default nextConfig;
 /**
  * next.config.ts
  *
@@ -22,9 +15,6 @@ export default nextConfig;
 import withBundleAnalyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  transpilePackages: ["@stellarveriphy/shared"],
-};
 import { ALLOWED_IMAGE_URL_PATTERNS } from "./config/app";
 
 // ---------------------------------------------------------------------------
@@ -51,39 +41,17 @@ const cspValue = [
 // ---------------------------------------------------------------------------
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["@stellarveriphy/shared"],
+
   // -------------------------------------------------------------------------
   // Image optimisation
   // -------------------------------------------------------------------------
   images: {
-    /**
-     * Allow next/image to fetch and optimise images from IPFS gateways and
-     * Arweave.  Patterns are maintained in config/app.ts so they stay in sync
-     * with the CSP connect-src and the TypeScript types.
-     */
     remotePatterns: ALLOWED_IMAGE_URL_PATTERNS,
-    /**
-     * Serve AVIF first (best compression), then WebP as a fallback.
-     * Browsers that support neither receive the original format.
-     */
     formats: ["image/avif", "image/webp"],
-    /**
-     * Device widths used to generate the srcset for responsive images.
-     * Covers from small mobile (320) up to wide-screen (1920).
-     */
     deviceSizes: [320, 480, 640, 750, 828, 1080, 1200, 1920],
-    /**
-     * Fixed-size widths for the `sizes` attribute on icon / thumbnail images.
-     */
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    /**
-     * Minimum seconds a generated image variant is kept in the cache.
-     * Default is 60 s; bump to 10 min since IPFS content is immutable.
-     */
     minimumCacheTTL: 600,
-    /**
-     * Disable the blur placeholder computation on the server-side for
-     * remote images (we supply our own static blur URI from config/app.ts).
-     */
     dangerouslyAllowSVG: false,
     contentDispositionType: "attachment",
   },

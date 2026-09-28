@@ -1,5 +1,3 @@
-import { createHash } from "crypto";
-
 /**
  * hash.ts
  *
