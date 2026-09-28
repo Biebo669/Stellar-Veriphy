@@ -23,15 +23,19 @@ Small, easily-reversible implementation details (variable naming, a single funct
 
 ## Index
 
-| ADR                                           | Title                                               | Status   |
-| --------------------------------------------- | --------------------------------------------------- | -------- |
-| [0001](0001-record-architecture-decisions.md)     | Record architecture decisions                       | Accepted |
-| [0002](0002-soroban-on-stellar.md)                | Use Soroban smart contracts on Stellar              | Accepted |
-| [0003](0003-pnpm-monorepo.md)                     | Use a pnpm workspaces monorepo                      | Accepted |
-| [0004](0004-tee-oracle-trust-model.md)            | TEE-based oracle for trusted off-chain verification | Accepted |
-| [0005](0005-pluggable-storage-layer.md)           | Pluggable storage layer (IPFS or MongoDB)           | Accepted |
-| [0006](0006-oracle-request-routing.md)            | Rate-limited oracle request router                  | Accepted |
-| [0007](0007-end-to-end-observability.md)          | End-to-end tracing and structured observability     | Accepted |
-| [0008](0008-ai-content-labeling.md)               | AI-generated content labeling                       | Accepted |
-| [0009](0009-compliance-policy-engine.md)          | Configurable compliance policy engine               | Accepted |
-| [0010](0010-verification-job-recovery.md)         | Verification job recovery                           | Accepted |
+| ADR                                              | Title                                               | Status   |
+| ------------------------------------------------ | --------------------------------------------------- | -------- |
+| [0001](0001-record-architecture-decisions.md)    | Record architecture decisions                       | Accepted |
+| [0002](0002-soroban-on-stellar.md)               | Use Soroban smart contracts on Stellar              | Accepted |
+| [0003](0003-pnpm-monorepo.md)                    | Use a pnpm workspaces monorepo                      | Accepted |
+| [0004](0004-tee-oracle-trust-model.md)           | TEE-based oracle for trusted off-chain verification | Accepted |
+| [0005](0005-pluggable-storage-layer.md)          | Pluggable storage layer (IPFS or MongoDB)           | Accepted |
+| [0006](0006-oracle-request-routing.md)           | Rate-limited oracle request router                  | Accepted |
+| [0007](0007-end-to-end-observability.md)         | End-to-end tracing and structured observability     | Accepted |
+| [0008](0008-ai-content-labeling.md)              | AI-generated content labeling                       | Accepted |
+| [0009](0009-compliance-policy-engine.md)         | Configurable compliance policy engine               | Accepted |
+| [0010](0010-verification-job-recovery.md)        | Verification job recovery                           | Accepted |
+| [0011](0011-cross-tenant-data-segregation.md)    | Cross-tenant data segregation model                 | Accepted |
+| [0012](0012-attestation-oracle-failover.md)      | Resilient failover for attestation and oracle       | Accepted |
+| [0013](0013-oracle-anomaly-detection.md)         | Anomaly detection for suspicious oracle activity    | Accepted |
+| [0014](0014-dynamic-provenance-access-policy.md) | Dynamic policy engine for provenance access         | Accepted |

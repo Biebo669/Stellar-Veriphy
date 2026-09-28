@@ -1,16 +1,17 @@
+// ---------------------------------------------------------------------------
+// Core content manifest
+// ---------------------------------------------------------------------------
+
 export interface ContentManifest {
-  contentHash: string;       // sha256 of the media file
-  creator: string;           // Stellar public key (G...)
-  timestamp: string;         // ISO 8601
-  schemaVersion?: string; // semantic version string (e.g. 1.0.0, 2.0.0)
-  contentHash: string; // sha256 of the media file
-  creator: string; // Stellar public key (G...)
-  timestamp: string; // ISO 8601
+  schemaVersion?: string;
+  contentHash: string;
+  creator: string;
+  timestamp: string;
   metadata?: {
     device?: string;
     location?: string;
     aiModel?: string;
-    [key: string]: string | undefined; // additional creator-supplied fields
+    [key: string]: string | undefined;
   };
   media?: {
     fileName?: string;
@@ -18,6 +19,10 @@ export interface ContentManifest {
     fileSizeBytes?: number;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Provenance certificate
+// ---------------------------------------------------------------------------
 
 export interface ProvenanceCert {
   id: string;
@@ -31,15 +36,22 @@ export interface ProvenanceCert {
   timestamp: number;
 }
 
+// ---------------------------------------------------------------------------
+// Verification status
+// ---------------------------------------------------------------------------
+
 export type VerificationStatus = "pending" | "processing" | "certified" | "failed";
 
-// Upload metadata as accepted by POST /api/uploads (see docs/api/upload-metadata.md).
+// ---------------------------------------------------------------------------
+// Upload metadata — POST /api/uploads
+// ---------------------------------------------------------------------------
+
 export interface UploadMetadata {
   fileName: string;
   mimeType: string;
-  fileSize: number;          // bytes
-  contentHash: string;       // sha256 of the file bytes, lowercase hex
-  creator: string;           // Stellar public key (G...)
+  fileSize: number;
+  contentHash: string;
+  creator: string;
   title?: string;
   description?: string;
   tags: string[];
@@ -48,9 +60,13 @@ export interface UploadMetadata {
 
 export interface UploadRecord extends UploadMetadata {
   id: string;
-  createdAt: string;         // ISO 8601
-  manifestHash: string;      // sha256 of the canonical manifest JSON
+  createdAt: string;
+  manifestHash: string;
 }
+
+// ---------------------------------------------------------------------------
+// Verification job (API / frontend tracking)
+// ---------------------------------------------------------------------------
 
 export interface VerificationJob {
   id: string;
@@ -63,23 +79,31 @@ export interface VerificationJob {
   result?: { manifestHash: string };
 }
 
-// A job as returned by the API, with queue details derived at read time.
 export interface VerificationJobView extends VerificationJob {
-  queuePosition: number | null;     // 1-based position among pending jobs
-  estimatedWaitMs: number | null;   // null when there is no history to estimate from
+  queuePosition: number | null;
+  estimatedWaitMs: number | null;
   averageDurationMs: number | null;
-/** Evidence produced by the TEE oracle and checked against the registry contract. */
-export interface AttestationEvidence {
-  enclave: string;               // e.g. "AWS Nitro Enclave"
-  attestationHash: string;
-  attestationValid: boolean;     // signed attestation document verified
-  teeCodeHash: string;
-  teeCodeHashApproved: boolean;  // registry.is_approved(teeCodeHash)
-  contentHashMatches: boolean;   // recomputed media hash equals manifest.contentHash
-  creatorSigned: boolean;        // creator authorised the request with their Stellar key
 }
 
-export type ProvenanceEventType =
+// ---------------------------------------------------------------------------
+// Attestation evidence
+// ---------------------------------------------------------------------------
+
+export interface AttestationEvidence {
+  enclave: string;
+  attestationHash: string;
+  attestationValid: boolean;
+  teeCodeHash: string;
+  teeCodeHashApproved: boolean;
+  contentHashMatches: boolean;
+  creatorSigned: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Provenance event types (legacy — used by VerificationRecord)
+// ---------------------------------------------------------------------------
+
+export type LegacyProvenanceEventType =
   | "manifest_created"
   | "uploaded"
   | "verification_requested"
@@ -87,142 +111,112 @@ export type ProvenanceEventType =
   | "certificate_minted"
   | "verification_failed";
 
-export interface ProvenanceEvent {
-  type: ProvenanceEventType;
-  timestamp: string;             // ISO 8601
-  actor?: string;                // Stellar public key or service name
+export interface LegacyProvenanceEvent {
+  type: LegacyProvenanceEventType;
+  timestamp: string;
+  actor?: string;
   detail?: string;
-  txHash?: string;               // Stellar transaction hash, for on-chain events
+  txHash?: string;
 }
 
-/** Everything the UI needs to present one verified (or in-progress) asset. */
+// ---------------------------------------------------------------------------
+// Verification record (frontend domain object)
+// ---------------------------------------------------------------------------
+
 export interface VerificationRecord {
   id: string;
   title: string;
   mediaType: "image" | "video" | "audio" | "document";
   status: VerificationStatus;
   manifest: ContentManifest;
-  cert?: ProvenanceCert;         // present once minted
-  evidence?: AttestationEvidence; // present once the oracle has run
-  timeline: ProvenanceEvent[];
+  cert?: ProvenanceCert;
+  evidence?: AttestationEvidence;
+  timeline: LegacyProvenanceEvent[];
+}
+
 // ---------------------------------------------------------------------------
 // Verification mode
 // ---------------------------------------------------------------------------
 
-/** Which verification path the user has chosen. */
 export type VerificationMode = "standard" | "advanced";
 
 // ---------------------------------------------------------------------------
 // Wallet connection status
 // ---------------------------------------------------------------------------
 
-/** Current state of the Freighter wallet connection. */
 export type WalletConnectionStatus = "disconnected" | "connecting" | "connected";
 
 // ---------------------------------------------------------------------------
 // CertificateDetails — mirrors the on-chain ProvenanceCert struct
 // ---------------------------------------------------------------------------
 
-/**
- * Frontend representation of a minted provenance certificate.
- * Field names are camelCase equivalents of the Soroban `ProvenanceCert` struct.
- */
 export interface CertificateDetails {
-  /** Auto-incrementing on-chain certificate identifier (u64 on-chain). */
   id: string;
-  /** IPFS / Arweave storage reference for the original media file. */
   storageRef: string;
-  /** SHA-256 hex digest of the manifest JSON. */
   manifestHash: string;
-  /** SHA-256 hex digest of the TEE attestation payload. */
   attestationHash: string;
-  /** Stellar public key of the content creator. */
   creator: string;
-  /** Ledger timestamp (seconds since Unix epoch) at the time of minting. */
   timestamp: number;
 }
 
 // ---------------------------------------------------------------------------
-// VerificationJob
+// VerificationJob (on-chain Oracle job — note: separate from UploadVerificationJob)
 // ---------------------------------------------------------------------------
 
-/** Lifecycle status of a verification job submitted to the Oracle contract. */
 export type VerificationJobStatus = "pending" | "processing" | "verified" | "rejected" | "failed";
 
-/**
- * Tracks a single verification job from submission through to certificate
- * issuance (or failure).
- */
-export interface VerificationJob {
-  /** Unique job identifier returned by the Oracle `submit_request` call. */
+export interface OracleVerificationJob {
   jobId: string;
-  /** Current lifecycle status of the job. */
   status: VerificationJobStatus;
-  /** SHA-256 hex digest of the media content being verified. */
   contentHash: string;
-  /** SHA-256 hex digest of the attached manifest JSON. */
   manifestHash: string;
-  /** On-chain certificate ID, populated once the job reaches `verified` status. */
   certificateId?: string;
 }
 
 // ---------------------------------------------------------------------------
-// ApiResponse — generic wrapper for all API / service responses
+// ApiResponse — generic wrapper
 // ---------------------------------------------------------------------------
 
-/**
- * Generic wrapper returned by service functions and API routes.
- *
- * On success: `{ success: true, data: T }`
- * On failure: `{ success: false, error: string }`
- */
 export type ApiResponse<T> =
-  { success: true; data: T; error?: never } | { success: false; error: string; data?: never };
+  | { success: true; data: T; error?: never }
+  | { success: false; error: string; data?: never };
 
 // ---------------------------------------------------------------------------
-// SLA tracking  (mirrors oracle ProviderSLA + SLACompliance structs)
+// SLA tracking
 // ---------------------------------------------------------------------------
 
-/** SLA targets and rolling actuals for a provider. */
 export interface ProviderSLA {
-  // Targets
   targetResponseTimeSeconds: number;
   targetUptimePercentage: number;
   targetSuccessRate: number;
-  // Actuals
   actualResponseTime: number;
   actualUptime: number;
   actualSuccessRate: number;
-  // Internal counters
   totalRequests: number;
   successful: number;
   totalResponseSum: number;
 }
 
-/** Per-metric compliance result, including the overall compliance percentage. */
 export interface SLACompliance {
   responseTimeOk: boolean;
   uptimeOk: boolean;
   successRateOk: boolean;
-  /** Fraction of met targets expressed as a value in [0, 100]. */
   compliancePercent: number;
   suspended: boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Cost estimation  (mirrors oracle CostEstimate + ProviderPricing structs)
+// Cost estimation
 // ---------------------------------------------------------------------------
 
 export type PriorityLevel = "low" | "normal" | "high" | "urgent";
 export type ContentComplexity = "simple" | "moderate" | "complex";
 
-/** Pricing configuration for a provider (amounts in stroops). */
 export interface ProviderPricing {
   baseFeeStroops: number;
   perKbFeeStroops: number;
 }
 
-/** Itemised cost breakdown returned by the oracle estimate_cost function. */
 export interface CostEstimate {
   baseFee: number;
   sizeFee: number;
@@ -232,34 +226,26 @@ export interface CostEstimate {
 }
 
 // ---------------------------------------------------------------------------
-// TEE hash certificate references  (mirrors registry TeeHashCertRef struct)
+// TEE hash certificate references
 // ---------------------------------------------------------------------------
 
-/** Attestation certificate metadata attached to an approved TEE code hash. */
 export interface TeeHashCertRef {
-  /** Human-readable identifier or fingerprint for the certificate issuer. */
   issuer: string;
-  /** Unix timestamp from which the certificate is valid (seconds). */
   validFrom: number;
-  /** Unix timestamp at which the certificate expires (seconds). */
   validUntil: number;
-  /** Optional URI pointing to the full DER/PEM certificate (e.g. IPFS). */
   certUri?: string;
-  /** The TEE code hash covered by this certificate (hex string). */
   codeHash: string;
 }
 
-/** Result of querying a TEE hash together with its certificate reference. */
 export interface TeeHashWithCert {
   approved: boolean;
   certRef?: TeeHashCertRef;
 }
 
 // ---------------------------------------------------------------------------
-// Provenance events, records & export  (#616, #617, #618, #619)
+// Provenance events, records & export (#616–#619)
 // ---------------------------------------------------------------------------
 
-/** Kinds of events that can appear in a content item's provenance lineage. */
 export type ProvenanceEventType =
   | "verification_submitted"
   | "verification_completed"
@@ -271,25 +257,18 @@ export type ProvenanceEventType =
   | "certificate_linked"
   | "certificate_revoked";
 
-/** A single event in the provenance history of a certificate / asset. */
 export interface ProvenanceEvent {
   id: string;
   certificateId: string;
   type: ProvenanceEventType;
-  /** Stellar public key of the account that triggered the event. */
   actor: string;
-  /** Seconds since Unix epoch. */
   timestamp: number;
-  /** Human-readable description of what changed. */
   details?: string;
-  /** Field-level changes, e.g. `{ owner: { from, to } }`. */
   changes?: Record<string, { from?: string; to?: string }>;
-  /** Related certificate (for linked / derived content). */
   relatedCertificateId?: string;
   txHash?: string;
 }
 
-/** Flattened provenance record used for listings and exports. */
 export interface ProvenanceRecord extends CertificateDetails {
   contentHash: string;
   status: "active" | "revoked" | "expired";
@@ -301,7 +280,6 @@ export interface ProvenanceRecord extends CertificateDetails {
 
 export type ProvenanceExportFormat = "json" | "csv" | "ndjson";
 
-/** Wrapper metadata attached to every export for audit traceability. */
 export interface ProvenanceExportMeta {
   schemaVersion: string;
   exportedAt: string;
@@ -310,31 +288,24 @@ export interface ProvenanceExportMeta {
   recordCount: number;
   part: number;
   totalParts: number;
+}
+
+// ---------------------------------------------------------------------------
 // Type Guards
 // ---------------------------------------------------------------------------
 
-/**
- * Narrows an `ApiResponse<T>` to the success branch.
- * Use this instead of checking `response.success === true` manually.
- */
 export function isApiSuccess<T>(
   response: ApiResponse<T>,
 ): response is { success: true; data: T; error?: never } {
   return response.success === true;
 }
 
-/**
- * Narrows an `ApiResponse<T>` to the failure branch.
- */
 export function isApiError<T>(
   response: ApiResponse<T>,
 ): response is { success: false; error: string; data?: never } {
   return response.success === false;
 }
 
-/**
- * Returns true if `status` is a valid `VerificationStatus` string.
- */
 export function isVerificationStatus(status: string): status is VerificationStatus {
   return (
     status === "pending" ||
@@ -344,9 +315,6 @@ export function isVerificationStatus(status: string): status is VerificationStat
   );
 }
 
-/**
- * Returns true if `status` is a valid `VerificationJobStatus` string.
- */
 export function isVerificationJobStatus(status: string): status is VerificationJobStatus {
   return (
     status === "pending" ||
@@ -357,10 +325,6 @@ export function isVerificationJobStatus(status: string): status is VerificationJ
   );
 }
 
-/**
- * Type guard for `CertificateDetails`. Validates that the required fields are
- * present and correctly typed so callers don't need to cast from `unknown`.
- */
 export function isCertificateDetails(value: unknown): value is CertificateDetails {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
@@ -374,9 +338,6 @@ export function isCertificateDetails(value: unknown): value is CertificateDetail
   );
 }
 
-/**
- * Type guard for `ContentManifest`.
- */
 export function isContentManifest(value: unknown): value is ContentManifest {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
@@ -391,29 +352,24 @@ export function isContentManifest(value: unknown): value is ContentManifest {
 // Generic utility types
 // ---------------------------------------------------------------------------
 
-/** Makes every property of T deeply readonly. */
 export type DeepReadonly<T> = T extends (infer U)[]
   ? ReadonlyArray<DeepReadonly<U>>
   : T extends object
     ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
     : T;
 
-/** Extracts the data type from a successful ApiResponse. */
 export type ApiData<R extends ApiResponse<unknown>> = R extends { success: true; data: infer D }
   ? D
   : never;
 
-/** Makes the listed keys required while keeping the rest as-is. */
 export type RequireFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
 // ---------------------------------------------------------------------------
-// Collaborative Verification (Issue #468)
+// Collaborative Verification (#468)
 // ---------------------------------------------------------------------------
 
-/** User role in a verification team. */
 export type TeamRole = "owner" | "editor" | "reviewer" | "viewer";
 
-/** Permission levels for collaborative features. */
 export type Permission =
   | "view_verification"
   | "edit_verification"
@@ -421,7 +377,6 @@ export type Permission =
   | "manage_team"
   | "export_data";
 
-/** Member of a verification team. */
 export interface TeamMember {
   publicKey: string;
   role: TeamRole;
@@ -429,7 +384,6 @@ export interface TeamMember {
   permissions: Permission[];
 }
 
-/** Verification team for collaborative work. */
 export interface VerificationTeam {
   id: string;
   name: string;
@@ -440,7 +394,6 @@ export interface VerificationTeam {
   updatedAt: number;
 }
 
-/** Shared verification document with edit tracking. */
 export interface SharedVerificationDocument {
   id: string;
   teamId: string;
@@ -457,7 +410,6 @@ export interface SharedVerificationDocument {
   editors: string[];
 }
 
-/** Workflow step for verification authorization. */
 export interface WorkflowStep {
   id: string;
   documentId: string;
@@ -469,7 +421,6 @@ export interface WorkflowStep {
   comment?: string;
 }
 
-/** Audit log entry tracking user actions. */
 export interface AuditLogEntry {
   id: string;
   entityType:
@@ -487,7 +438,6 @@ export interface AuditLogEntry {
   timestamp: number;
 }
 
-/** Notification for team members about verification activities. */
 export interface VerificationNotification {
   id: string;
   recipientPublicKey: string;
@@ -499,10 +449,9 @@ export interface VerificationNotification {
 }
 
 // ---------------------------------------------------------------------------
-// Content Versioning (Issue #469)
+// Content Versioning (#469)
 // ---------------------------------------------------------------------------
 
-/** A version of verified content. */
 export interface ContentVersion {
   id: string;
   certificateId?: string;
@@ -517,7 +466,6 @@ export interface ContentVersion {
   isCurrentVersion: boolean;
 }
 
-/** Version history for a piece of content. */
 export interface VersionHistory {
   id: string;
   contentHash: string;
@@ -528,14 +476,12 @@ export interface VersionHistory {
   updatedAt: number;
 }
 
-/** Comparison between two versions. */
 export interface VersionComparison {
   versionA: ContentVersion;
   versionB: ContentVersion;
   differences: VersionDifference[];
 }
 
-/** Detailed difference between two versions. */
 export interface VersionDifference {
   field: string;
   oldValue: unknown;
@@ -547,7 +493,6 @@ export interface VersionDifference {
 // Asset versioning — rollback metadata (#658)
 // ---------------------------------------------------------------------------
 
-/** Reason an asset was rolled back to a previous version. */
 export type RollbackReason =
   | "data_corruption"
   | "incorrect_attestation"
@@ -556,42 +501,21 @@ export type RollbackReason =
   | "operational_error"
   | "other";
 
-/**
- * Immutable record created each time an asset is rolled back to a prior
- * version. Preserved for auditability so the full version history remains
- * legible even after subsequent changes.
- */
 export interface RollbackMetadata {
-  /** Unique rollback event identifier. */
   id: string;
-  /** The content hash of the asset this rollback belongs to. */
   contentHash: string;
-  /** Version that was active at the time the rollback was initiated. */
   fromVersionId: string;
   fromVersionNumber: number;
-  /** Version that became active after the rollback completed. */
   toVersionId: string;
   toVersionNumber: number;
-  /** The Stellar address of the account that initiated the rollback. */
   initiatedBy: string;
-  /** ISO 8601 timestamp of when the rollback was initiated. */
   initiatedAt: string;
-  /** Human-readable explanation for why the rollback was performed. */
   reason: RollbackReason;
-  /** Optional free-text notes recorded by the initiator. */
   notes?: string;
-  /** On-chain transaction hash of the rollback record, if anchored. */
   txHash?: string;
-  /**
-   * Manifest hash of the target version, copied here for quick integrity
-   * verification without re-fetching the full version record.
-   */
   targetManifestHash: string;
 }
 
-/**
- * Full rollback history for a content asset, grouped for easy rendering.
- */
 export interface RollbackHistory {
   contentHash: string;
   rollbacks: RollbackMetadata[];
@@ -602,7 +526,6 @@ export interface RollbackHistory {
 // Admin moderation queue (#655)
 // ---------------------------------------------------------------------------
 
-/** Why an asset was placed in the moderation queue. */
 export type ModerationTrigger =
   | "disputed_provenance"
   | "suspicious_attestation"
@@ -611,7 +534,6 @@ export type ModerationTrigger =
   | "automated_anomaly"
   | "manual_escalation";
 
-/** Lifecycle status of a moderation item. */
 export type ModerationStatus =
   | "pending"
   | "under_review"
@@ -620,41 +542,24 @@ export type ModerationStatus =
   | "escalated"
   | "resolved";
 
-/** A single item in the admin moderation queue. */
 export interface ModerationQueueItem {
-  /** Unique moderation item identifier. */
   id: string;
-  /** Certificate or asset identifier being reviewed. */
   assetId: string;
-  /** Content hash of the disputed asset. */
   contentHash: string;
-  /** Current lifecycle status of the moderation item. */
   status: ModerationStatus;
-  /** What caused this asset to enter the queue. */
   trigger: ModerationTrigger;
-  /** Stellar address of the party raising the dispute (if applicable). */
   reportedBy?: string;
-  /** Stellar address of the asset's creator. */
   creatorAddress?: string;
-  /** Human-readable summary of the dispute or concern. */
   summary: string;
-  /** Supporting evidence: links, hashes, notes. */
   evidence?: string[];
-  /** ISO 8601 timestamp when the item entered the queue. */
   createdAt: string;
-  /** ISO 8601 timestamp of the most recent status change. */
   updatedAt: string;
-  /** Stellar address of the reviewer who is handling or handled this item. */
   assignedTo?: string;
-  /** Admin notes recorded during review. */
   reviewNotes?: string;
-  /** ISO 8601 timestamp of final resolution, if any. */
   resolvedAt?: string;
-  /** Escalation chain — ordered list of addresses who have handled the item. */
   escalationChain?: string[];
 }
 
-/** Summary counters for the moderation queue dashboard. */
 export interface ModerationQueueSummary {
   total: number;
   pending: number;
@@ -664,10 +569,9 @@ export interface ModerationQueueSummary {
 }
 
 // ---------------------------------------------------------------------------
-// Analytics Dashboard (Issue #470)
+// Analytics Dashboard (#470)
 // ---------------------------------------------------------------------------
 
-/** Verification statistics. */
 export interface VerificationStatistics {
   totalVerifications: number;
   successfulVerifications: number;
@@ -676,7 +580,6 @@ export interface VerificationStatistics {
   averageProcessingTime: number;
 }
 
-/** Usage trend data point. */
 export interface UsageTrendData {
   date: string;
   verifications: number;
@@ -684,20 +587,17 @@ export interface UsageTrendData {
   successfulCertificates: number;
 }
 
-/** Usage trends over a time period. */
 export interface UsageTrends {
   period: "day" | "week" | "month" | "year";
   data: UsageTrendData[];
 }
 
-/** Content type popularity metrics. */
 export interface ContentTypeMetric {
   contentType: string;
   count: number;
   percentage: number;
 }
 
-/** Content popularity data. */
 export interface PopularContentData {
   contentTypes: ContentTypeMetric[];
   topContentHashes: Array<{
@@ -707,7 +607,6 @@ export interface PopularContentData {
   }>;
 }
 
-/** Geographic distribution data. */
 export interface GeographicDistribution {
   country: string;
   region?: string;
@@ -717,7 +616,6 @@ export interface GeographicDistribution {
   longitude?: number;
 }
 
-/** User analytics data. */
 export interface UserAnalytics {
   totalUsers: number;
   activeUsers: number;
@@ -729,7 +627,6 @@ export interface UserAnalytics {
   }>;
 }
 
-/** Report export data. */
 export interface AnalyticsReport {
   id: string;
   generatedAt: number;
@@ -744,10 +641,9 @@ export interface AnalyticsReport {
 }
 
 // ---------------------------------------------------------------------------
-// Browser Extension (Issue #471)
+// Browser Extension (#471)
 // ---------------------------------------------------------------------------
 
-/** Browser extension configuration. */
 export interface ExtensionConfig {
   apiBase: string;
   enableNotifications: boolean;
@@ -756,7 +652,6 @@ export interface ExtensionConfig {
   certificateValidationEnabled: boolean;
 }
 
-/** Extension verification request. */
 export interface ExtensionVerificationRequest {
   contentHash: string;
   contentType: "image" | "link" | "page" | "file";
@@ -764,7 +659,6 @@ export interface ExtensionVerificationRequest {
   metadata?: Record<string, unknown>;
 }
 
-/** Extension verification result. */
 export interface ExtensionVerificationResult {
   contentHash: string;
   isVerified: boolean;
@@ -774,7 +668,6 @@ export interface ExtensionVerificationResult {
   timestamp: number;
 }
 
-/** Certificate validation result. */
 export interface CertificateValidation {
   certificateId: string;
   isValid: boolean;

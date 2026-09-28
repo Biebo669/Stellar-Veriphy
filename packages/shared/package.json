@@ -27,7 +27,12 @@
     "./tracing": "./tracing/index.ts",
     "./recovery": "./recovery/index.ts",
     "./ai-labeling": "./ai-labeling/index.ts",
-    "./policy": "./policy/index.ts"
+    "./policy": "./policy/index.ts",
+    "./schemas": "./schemas/index.ts",
+    "./tenant": "./tenant/index.ts",
+    "./failover": "./failover/index.ts",
+    "./anomaly": "./anomaly/index.ts",
+    "./access-policy": "./access-policy/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
