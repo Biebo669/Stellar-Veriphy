@@ -782,3 +782,8 @@ export interface CertificateValidation {
     timestampValid: boolean;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Multi-anchor provenance (ADR-0008)
+// ---------------------------------------------------------------------------
+export * from "./anchors";
