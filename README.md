@@ -428,3 +428,1213 @@ Key definitions:
 
 - `VerificationStatus`
   - union of states: `
+computeAmountValidation Validation Fix
+
+1. Issue
+
+"frontend/src/lib/validation.ts" contains "computeAmountValidation", which currently parses numeric input before checking whether the original string is malformed.
+
+This can allow malformed values, such as repeated decimal points, to be temporarily interpreted as valid numbers before failing later.
+
+The validation order should be:
+
+Raw input
+   ↓
+Validate numeric format
+   ↓
+Reject malformed input
+   ↓
+Parse float
+   ↓
+Check zero
+   ↓
+Existing behavior
+
+---
+
+2. Goal
+
+Make the smallest possible change so malformed numeric strings are rejected before float parsing and zero comparison.
+
+The existing behavior for valid amounts must remain unchanged.
+
+---
+
+3. Scope
+
+Only modify:
+
+frontend/src/lib/validation.ts
+
+and its immediately related test file.
+
+Do not introduce:
+
+- New dependencies
+- New modules
+- New validation frameworks
+- UI changes
+- Broad refactoring
+- Changes to unrelated functions
+
+---
+
+4. Implementation
+
+1. Open "frontend/src/lib/validation.ts".
+2. Locate "computeAmountValidation".
+3. Identify where numeric parsing currently happens.
+4. Identify the existing malformed-string validation.
+5. Move/add the smallest possible guard so malformed input is rejected first.
+6. Leave the existing float parsing and zero comparison unchanged.
+7. Preserve the current return values and error behavior.
+
+Conceptually:
+
+if input is malformed:
+    return existing invalid result
+
+parse input
+check zero
+continue existing logic
+
+---
+
+5. Regression Test
+
+Find the existing validation test:
+
+rg "computeAmountValidation" frontend/
+
+Add one focused regression test covering the malformed numeric case, such as a value containing repeated decimal points.
+
+The test should confirm that:
+
+malformed input → invalid result
+
+The test should fail against the old implementation and pass after the fix.
+
+---
+
+6. Preserve Existing Behavior
+
+Do not change how valid amounts are handled.
+
+Existing cases such as valid integers and decimals should continue producing exactly the same results.
+
+Do not change:
+
+- Zero handling
+- Error messages
+- Function signatures
+- UI behavior
+- State management
+- Numeric formatting rules
+
+unless directly required by the existing contract.
+
+---
+
+7. Validation Commands
+
+Run the focused test first.
+
+Then run the frontend package tests.
+
+Where configured, also run:
+
+npm run typecheck
+npm run lint
+
+and:
+
+npm run build
+
+The exact commands should follow the repository's existing scripts.
+
+---
+
+8. Review
+
+Check:
+
+git diff -- frontend/src/lib/validation.ts
+
+The implementation should be a small, easily reviewable change.
+
+Confirm:
+
+- [ ] Malformed input is rejected before parsing.
+- [ ] Zero comparison happens after syntax validation.
+- [ ] Valid input behaves exactly as before.
+- [ ] One regression test was added.
+- [ ] Tests pass.
+- [ ] No dependencies were added.
+- [ ] No unrelated files were changed.
+- [ ] No broad refactor was introduced.
+
+---
+
+9. Definition of Done
+
+The issue is complete when "computeAmountValidation" validates the original numeric string before converting it to a float, the malformed-input regression test passes, and the existing frontend validation behavior remains unchanged.
+
+The goal is a small code diff with a clear validation boundary.
+Below is the same style of implementation README, expanded into a detailed contributor guide while keeping the actual code change intentionally small.
+
+computeAmountValidation Malformed Numeric Input Validation
+
+Issue
+
+Reject malformed numeric strings before float parsing
+
+"frontend/src/lib/validation.ts" contains the "computeAmountValidation" function, which currently parses floating-point values before completely validating that the original input is a well-formed numeric string.
+
+This ordering creates an incorrect validation flow.
+
+Malformed numeric strings can temporarily become values that appear valid after parsing or normalization. The input may then fail at a later validation step, state transition, or UI operation.
+
+The correct behavior is to validate the numeric string first and reject malformed input before:
+
+float parsing
+
+and before:
+
+zero comparison
+
+The intended fix is deliberately small.
+
+The implementation should add the minimum validation guard necessary to ensure malformed numeric strings are rejected before they can enter the existing numeric validation path.
+
+---
+
+1. Background
+
+The affected function is:
+
+frontend/src/lib/validation.ts
+
+Specifically:
+
+computeAmountValidation
+
+This function is responsible for validating an amount entered by the user.
+
+The current implementation performs floating-point parsing before fully validating the textual representation of the amount.
+
+Conceptually, the problematic flow looks like:
+
+user input
+    |
+    v
+parse float
+    |
+    v
+zero comparison
+    |
+    v
+malformed-input validation
+
+The desired flow is:
+
+user input
+    |
+    v
+validate numeric string
+    |
+    v
+reject malformed input
+    |
+    v
+parse float
+    |
+    v
+zero comparison
+    |
+    v
+existing validation behavior
+
+The difference is small in code but important in behavior.
+
+---
+
+2. Problem Statement
+
+The current validation sequence allows malformed numeric strings to reach the numeric parsing stage before their textual structure has been validated.
+
+This can create several undesirable outcomes.
+
+A malformed input may:
+
+1. Be partially normalized by numeric parsing.
+2. Temporarily look like a valid number.
+3. Pass one validation stage.
+4. Fail at a later stage.
+5. Produce an error unrelated to the original malformed input.
+6. Cause an unexpected state transition.
+7. Make debugging harder.
+8. Create inconsistent UI behavior.
+9. Make validation boundaries less explicit.
+10. Create a weaker security boundary than intended.
+
+The issue is therefore not simply about formatting.
+
+The important property is validation order.
+
+---
+
+3. Core Requirement
+
+Malformed numeric strings must be rejected before floating-point parsing and before the zero comparison.
+
+The desired sequence is:
+
+raw input
+   |
+   v
+numeric-string validation
+   |
+   +---- invalid ----> reject
+   |
+   v
+float parsing
+   |
+   v
+zero comparison
+   |
+   v
+existing validation result
+
+The existing normal path should otherwise remain unchanged.
+
+---
+
+4. Scope
+
+The change must remain tightly scoped.
+
+Expected files:
+
+frontend/src/lib/validation.ts
+
+and the immediately related test file.
+
+Do not introduce:
+
+new dependencies
+new modules
+new validation libraries
+new utilities
+large refactors
+unrelated UI changes
+
+The implementation should be a small guard or validation-order correction.
+
+---
+
+5. Primary Objective
+
+Change "computeAmountValidation" so that malformed numeric strings are rejected before they are converted into floating-point values.
+
+The fix should preserve:
+
+- Existing valid-input behavior.
+- Existing error behavior where applicable.
+- Existing UI behavior.
+- Existing return types.
+- Existing function signature.
+- Existing validation contract.
+- Existing dependency structure.
+
+Only the malformed-input boundary should change.
+
+---
+
+6. Important Principle
+
+Do not attempt to redesign numeric validation.
+
+This issue does not require a new validation framework.
+
+It does not require:
+
+schema libraries
+
+or:
+
+custom parsing packages
+
+or:
+
+global validation utilities
+
+The safest solution is to make the existing validation order explicit.
+
+---
+
+7. First Step — Inspect the Function
+
+Open:
+
+frontend/src/lib/validation.ts
+
+Locate:
+
+computeAmountValidation
+
+Read the complete function before editing it.
+
+Do not immediately change the first suspicious line.
+
+Understand:
+
+- Its input type.
+- Its return type.
+- Existing validation branches.
+- Existing defaults.
+- Existing state-related behavior.
+- Existing error messages.
+- Existing numeric parsing.
+- Existing zero checks.
+- Existing malformed-input checks.
+
+---
+
+8. Inspect Surrounding Functions
+
+Read the surrounding code in:
+
+frontend/src/lib/validation.ts
+
+Determine whether:
+
+computeAmountValidation
+
+uses helper functions.
+
+Look for functions responsible for:
+
+- Numeric validation.
+- Decimal validation.
+- Empty input validation.
+- Amount formatting.
+- Parsing.
+- Error generation.
+
+The goal is to use the existing validation contract rather than duplicate logic unnecessarily.
+
+---
+
+9. Identify the Current Order
+
+The investigation should explicitly identify where the current function does:
+
+parseFloat(...)
+
+or an equivalent numeric conversion.
+
+Then identify where it checks:
+
+<= 0
+
+or equivalent zero validation.
+
+Finally identify where it checks for malformed numeric syntax.
+
+The issue exists if malformed syntax is evaluated only after parsing.
+
+---
+
+10. Why Parse Order Matters
+
+A string and its parsed numeric representation are different things.
+
+For example:
+
+"123.45"
+
+is a textual representation.
+
+After parsing:
+
+123.45
+
+the original textual structure is no longer available in the same form.
+
+That distinction matters when validating:
+
+- Decimal points.
+- Repeated decimal points.
+- Invalid characters.
+- Partial numeric strings.
+- Unexpected formatting.
+
+The raw string should therefore be validated before its numeric representation becomes authoritative.
+
+---
+
+11. Repeated Decimal Points
+
+One important malformed-input category is repeated decimal points.
+
+For example:
+
+12.34.56
+
+should not be treated as a valid amount.
+
+The exact expected behavior should be determined from the existing validation contract and tests.
+
+The new regression test should target the malformed case described by the issue.
+
+Do not broaden the accepted/rejected syntax unnecessarily.
+
+---
+
+12. Malformed Numeric Strings
+
+The implementation should distinguish between:
+
+valid numeric string
+
+and:
+
+malformed numeric string
+
+before parsing.
+
+Examples of potentially malformed values include:
+
+1.2.3
+
+or other strings that violate the function's existing numeric format.
+
+The test should use the smallest representative malformed value that demonstrates the bug.
+
+---
+
+13. Do Not Change Valid Inputs
+
+Valid inputs should continue through the existing path.
+
+Examples may include:
+
+1
+10
+10.5
+100.00
+
+depending on the existing contract.
+
+The cleanup should not accidentally reject valid decimal amounts.
+
+---
+
+14. Do Not Change Zero Semantics
+
+The issue specifically concerns validation order.
+
+Do not redesign the existing zero check.
+
+If the current function rejects:
+
+0
+
+then it should continue to reject it.
+
+If it handles another zero-equivalent representation according to an established contract, preserve that behavior.
+
+The change should simply ensure malformed strings are rejected first.
+
+---
+
+15. Do Not Change Function Signature
+
+Keep the existing:
+
+computeAmountValidation(...)
+
+signature.
+
+Do not introduce:
+
+computeAmountValidationV2(...)
+
+or:
+
+validateAmount(...)
+
+unless the existing code absolutely requires it.
+
+It should not.
+
+---
+
+16. Do Not Add Dependencies
+
+Do not add a package for numeric validation.
+
+The issue should be solvable with the validation mechanisms already present in the project.
+
+Adding a dependency would increase:
+
+- Bundle complexity.
+- Maintenance cost.
+- Review scope.
+- Security surface.
+- Installation requirements.
+
+The requested change is intentionally small.
+
+---
+
+17. Inspect the Existing Tests
+
+Locate the immediately related test file.
+
+Search for:
+
+computeAmountValidation
+
+using:
+
+rg "computeAmountValidation" frontend/
+
+Then inspect the existing test cases.
+
+Understand how the project currently tests:
+
+- Valid amounts.
+- Invalid amounts.
+- Zero.
+- Decimal values.
+- Empty values.
+- Error messages.
+- Return values.
+
+The regression test should match the existing testing style.
+
+---
+
+18. Identify the Exact Regression Case
+
+The test should reproduce the current bug before the implementation is changed.
+
+The intended test scenario is:
+
+malformed numeric string
+        |
+        v
+computeAmountValidation
+        |
+        v
+invalid result
+
+The test should demonstrate that the malformed value is rejected at the validation boundary.
+
+Do not merely test that some later operation fails.
+
+---
+
+19. Why the Regression Test Matters
+
+A regression test proves that the issue is behavioral.
+
+Without it, the code change could look like a stylistic refactor.
+
+The test should demonstrate:
+
+before:
+malformed input reaches numeric parsing
+
+and after the fix:
+
+malformed input is rejected before parsing
+
+This gives reviewers confidence that the patch addresses the actual bug.
+
+---
+
+20. Test the Normal Path
+
+The existing normal-path tests should remain unchanged unless the new validation guard requires a small adjustment.
+
+For example:
+
+valid amount
+    |
+    v
+existing validation result
+
+must continue to work.
+
+The «Does "computeAmountValidation" reject this malformed numeric string before it can be treated as a parsed number?»
+
+---
+
+
+---
+
+36. Narrow Test Command
+
+Use the narrowest relevant test command first.
+
+For example, depending on the project:
+
+npm test -- validation
+
+or:
+
+npx vitest frontend/src/.../validation.test.ts
+
+or the project's documented equivalent.
+
+Use the actual test runner configured by the repository.
+
+Do not invent a command if the project uses a different setup.
+
+---
+
+37. Package-Level Test
+
+After the focused test passes, run the affected frontend package's normal test command.
+
+For example:
+
+npm test
+
+or:
+
+npm run test
+
+depending on the repository.
+
+The objective is to ensure the small validation change does not break neighboring behavior.
+
+---
+
+38. Type Checking
+
+If the frontend package supports TypeScript checking, run the existing command.
+
+Potential examples include:
+
+npm run typecheck
+
+or:
+
+npx tsc --noEmit
+
+Use the project's configured command.
+
+Do not introduce a new TypeScript configuration.
+
+---
+
+39. Linting
+
+If linting is part of the package workflow, run it.
+
+For example:
+
+npm run lint
+
+The change should not introduce:
+
+- unused variables.
+- unreachable code.
+- formatting errors.
+- unsafe coercions.
+
+---
+
+40. Build
+
+A full production build is optional if the repository's normal validation requires it.
+
+If the package uses:
+
+npm run build
+
+and this is normally required for frontend changes, run it.
+
+Otherwise, the narrow test and package validation may be sufficient for this small change.
+
+---
+
+41. Verify the Diff
+
+Run:
+
+git diff -- frontend/src/lib/validation.ts
+
+and the relevant test file.
+
+The diff should be small.
+
+A reviewer should be able to understand the entire change quickly.
+
+---
+
+42. Expected Diff Shape
+
+The expected change should generally look like:
+
+validation.ts
+    + malformed-input guard
+    existing parse
+    existing zero check
+    existing logic
+
+validation.test.ts
+    + one regression test
+
+It should not become:
+
+validation.ts
+    hundreds of changed lines
+
+new validation utilities
+new dependencies
+new components
+new state management
+
+That would violate the scope.
+
+---
+
+43. Do Not Refactor Existing Validation
+
+Avoid renaming every validation helper.
+
+Avoid reorganizing the entire file.
+
+Avoid converting:
+
+function A
+function B
+function C
+
+into a new architecture.
+
+Even if the existing file could be improved, that is a separate task.
+
+---
+
+44. Do Not Change Formatting Unnecessarily
+
+If formatting tools modify unrelated sections, inspect the diff carefully.
+
+Do not include unrelated formatting changes in the PR if they can be avoided.
+
+The ideal patch is focused.
+
+---
+
+45. Boundary Conditions
+
+The main boundary is:
+
+malformed string
+
+versus:
+
+valid numeric string
+
+The implementation should not accidentally shift other boundaries.
+
+Pay attention to:
+
+empty string
+null/undefined if supported
+zero
+positive integers
+positive decimals
+negative values if supported
+multiple decimal points
+non-numeric characters
+
+Only the issue-specific behavior should change.
+
+---
+
+46. Empty Input
+
+Determine how the current function handles:
+
+""
+
+Do not automatically treat it the same as the repeated-decimal case.
+
+Preserve the existing contract unless the malformed-input guard naturally covers it.
+
+---
+
+47. Negative Values
+
+Determine whether negative amounts are already rejected.
+
+If they are, preserve that behavior.
+
+Do not introduce new negative-number rules.
+
+The issue is about validation ordering, not amount policy.
+
+---
+
+48. Whitespace
+
+Determine whether whitespace is currently:
+
+trimmed
+
+or:
+
+rejected
+
+Do not silently change this behavior.
+
+A validation-order fix should not become a whitespace-policy change.
+
+---
+
+49. Leading Zeros
+
+Determine whether values such as:
+
+0010
+
+are currently valid.
+
+Do not change their behavior unless the existing contract explicitly says otherwise.
+
+---
+
+50. Decimal Representation
+
+Determine what the existing function considers a valid decimal representation.
+
+Potential forms may include:
+
+10.5
+10.50
+0.5
+
+but the exact accepted forms belong to the existing contract.
+
+The regression fix should not redefine them.
+
+---
+
+51. Floating-Point Limitations
+
+Do not attempt to solve general JavaScript floating-point precision issues in this task.
+
+For example:
+
+0.1 + 0.2
+
+is unrelated to the malformed-string validation issue.
+
+Do not introduce decimal arithmetic libraries.
+
+---
+
+52. Numeric Coercion
+
+Inspect whether the function uses:
+
+parseFloat
+Number
+parseInt
+
+or another mechanism.
+
+Regardless of parser choice, the raw string must be validated according to the existing contract before conversion.
+
+---
+
+53. Partial Parse Risk
+
+One reason ordering matters is that some parsing APIs can accept a valid numeric prefix while ignoring trailing invalid content.
+
+Conceptually:
+
+"123abc"
+
+can potentially produce a numeric result from the prefix depending on the parser.
+
+This is why raw-string validation must establish that the entire input conforms to the expected numeric syntax.
+
+The exact behavior should be confirmed against the project's current parser.
+
+---
+
+54. Repeated Decimal Risk
+
+Likewise, an input such as:
+
+12.3.4
+
+is not a valid decimal representation even if a parser can extract a numeric prefix.
+
+The validator must reject the original string before treating the parsed number as authoritative.
+
+---
+
+55. Correct State Flow
+
+The final function should conceptually implement:
+
+                    raw input
+                       |
+                       v
+              ┌─────────────────┐
+              │ Numeric syntax  │
+              │    valid?       │
+              └────────┬────────┘
+                       |
+              ┌────────┴────────┐
+              |                 |
+             No                Yes
+              |                 |
+              v                 v
+           Reject             Parse
+                                |
+                                v
+                         Zero comparison
+                                |
+                                v
+                       Existing validation
+
+This is the behavior reviewers should be able to recognize directly in the code.
+
+---
+
+56. No New State
+
+The fix should not introduce new application state.
+
+Do not add:
+
+validationState
+parsedAmountState
+numericInputState
+
+The existing function should remain responsible for the validation result.
+
+---
+
+57. No New Module
+
+Do not create:
+
+numericValidation.ts
+amountParser.ts
+amountUtils.ts
+
+The issue specifically calls for a scoped correction in:
+
+frontend/src/lib/validation.ts
+
+---
+
+58. No Dependency
+
+Do not add:
+
+validator
+zod
+yup
+decimal.js
+big.js
+
+or similar packages.
+
+The existing implementation should be sufficient.
+
+---
+
+59. Security Review Consideration
+
+Although the code change is small, reviewers should consider whether malformed values can reach a security-sensitive operation.
+
+If "computeAmountValidation" gates:
+
+transaction amounts
+payments
+financial operations
+API requests
+
+then rejecting malformed input before parsing is particularly important.
+
+The patch should make the boundary deterministic.
+
+---
+
+60. Do Not Overstate the Security Impact
+
+The issue description mentions a security boundary.
+
+Do not claim that the existing bug constitutes a confirmed exploit unless the repository or issue provides evidence.
+
+---
+
+66. State Write Requirement
+
+If the function writes state directly or returns a result that causes state to be written, ensure the malformed-input branch happens before that operation.
+
+The principle is:
+
+validate first
+write second
+
+not:
+
+write provisional value
+validate afterward
+
+---
+
+67. Default Values
+
+Inspect whether "computeAmountValidation" assigns a default value.
+
+If a default assignment is part of the bug, correct only that assignment.
+
+Do not modify unrelated defaults.
+
+The correct default should be established from existing behavior and tests.
+
+---
+
+68. Early Return
+
+An early return may be the clearest implementation if the existing function already uses early returns.
+
+Conceptually:
+
+if invalid input:
+    return invalid result
+
+parse input
+continue existing code
+
+This keeps the validation boundary obvious.
+
+Follow the project's existing coding style.
+
+---
+
+69. Avoid Nested Complexity
+
+Do not solve the problem by wrapping the entire existing function in additional nested conditions.
+
+Prefer the smallest readable change.
+
+The desired result should be easy to review.
+
+---
+
+70. Keep the Existing Normal Path
+
+A reviewer should be able to compare:
+
+old valid-input path
+
+with:
+
+new valid-input path
+
+and see that they are effectively identical.
+
+Only malformed input should take the new rejection branch.
+
+---
+
+71. Manual Test
+
+If practical, manually exercise the affected UI.
+
+Enter:
+
+normal valid amount
+
+and confirm normal behavior.
+
+Then enter the malformed value used in the regression test.
+
+Confirm that:
+
+invalid input
+
+is rejected immediately according to the existing UI behavior.
+
+Do not make UI code changes simply to perform this test.
+
+---
+
+72. Browser Validation
+
+If the frontend can be run locally, use the existing development command.
+
+For example:
+
+npm run dev
+
+Then exercise the relevant form.
+
+Only do this if the repository's normal workflow makes it practical.
+
+---
+
+73. Package Boundary
+
+Keep all implementation changes inside:
+
+frontend/src/lib/validation.ts
+
+and the immediately related test file.
+
+Do not modify:
+
+backend/
+database/
+API routes/
+global configuration/
+package.json/
+
+unless absolutely required by the existing test setup.
+
+---
+
+74. Dependency Lockfile
+
+A lockfile should not change because this issue should not require a dependency.
+
+If:
+
+package-lock.json
+
+or:
+
+yarn.lock
+
+changes unexpectedly, investigate why.
+
+It may indicate that unnecessary package installation occurred.
+
+---
+
+75. Git Diff Requirement
+
+The final diff should remain small.
+
+Review:
+
+git diff --stat
+
+Then:
+
+git diff
+
