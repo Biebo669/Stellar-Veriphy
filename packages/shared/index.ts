@@ -24,3 +24,7 @@ export * from "./tenant";
 export * from "./failover";
 export * from "./anomaly";
 export * from "./access-policy";
+export * from "./key-lifecycle";
+export * from "./registry-governance";
+export * from "./tee-attestation";
+export * from "./verifier-reputation";
