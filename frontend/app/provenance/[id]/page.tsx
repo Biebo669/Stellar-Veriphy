@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ProvenanceHistoryView } from "@/components/provenance";
@@ -22,7 +23,17 @@ export default function ProvenanceHistoryPage() {
       ) : !record ? (
         <p className="text-center text-sm text-gray-600 dark:text-gray-300">Certificate #{id} was not found.</p>
       ) : (
-        <ProvenanceHistoryView record={record} events={getCertificateHistory(data, record.id)} />
+        <>
+          <ProvenanceHistoryView record={record} events={getCertificateHistory(data, record.id)} />
+          <div className="max-w-3xl mx-auto px-6 mt-4">
+            <Link
+              href={`/provenance/${id}/audit`}
+              className="inline-flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400 hover:underline"
+            >
+              View snapshot diff &amp; audit trail →
+            </Link>
+          </div>
+        </>
       )}
     </main>
   );

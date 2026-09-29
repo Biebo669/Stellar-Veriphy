@@ -109,14 +109,34 @@ export default function OraclesPage() {
               Registered verification providers and their on-chain operating record.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setRefreshKey((value) => value + 1)}
-            disabled={isLoading}
-            className="rounded border border-[#9baa9f] px-3 py-2 text-sm font-medium hover:bg-white disabled:opacity-50"
-          >
-            {isLoading ? "Updating…" : "Refresh registry"}
-          </button>
+          <div className="flex items-center gap-3">
+            <a
+              href="/registry/trust"
+              className="rounded border border-emerald-700 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50 transition-colors"
+            >
+              Trust dashboard →
+            </a>
+            <a
+              href="/oracles/analytics"
+              className="rounded border border-emerald-700 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50 transition-colors"
+            >
+              Analytics dashboard →
+            </a>
+            <a
+              href="/oracles/trust"
+              className="rounded border border-emerald-700 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50 transition-colors"
+            >
+              Trust scores →
+            </a>
+            <button
+              type="button"
+              onClick={() => setRefreshKey((value) => value + 1)}
+              disabled={isLoading}
+              className="rounded border border-[#9baa9f] px-3 py-2 text-sm font-medium hover:bg-white disabled:opacity-50"
+            >
+              {isLoading ? "Updating…" : "Refresh registry"}
+            </button>
+          </div>
         </div>
 
         <dl className="grid grid-cols-2 border-b border-[#cad3ce] sm:grid-cols-3">
